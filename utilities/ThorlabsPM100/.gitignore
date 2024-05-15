@@ -1,0 +1,18 @@
+# General
+*~
+*.swp
+*.out
+build/
+_build/
+
+# Python
+*.py[cod~]
+__pycache__/
+*egg-info/
+dist/
+.tox
+*.bak
+
+# Misc
+construction/
+make_the_doc.py
