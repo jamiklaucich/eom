@@ -27,6 +27,7 @@ power_meter = ThorlabsPM100(inst=pm_handle)
 
 TSL550_Laser = ftdi.FTD2xx_helper("19100002")
 
+keithley_2450 = rm.open_resource("USB0::0x05E6::0x2450::04131844::0::INSTR")
 wl_c = 1550#nm
 span = 5#nm
 step = 0.001;#step [nm]
