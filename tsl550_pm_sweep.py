@@ -1,5 +1,6 @@
 from utilities.ThorlabsPM100.ThorlabsPM100 import *
 from utilities.TSL550 import *
+from utilities.qcodes_utils import *
 import pyvisa as visa
 import numpy as np
 import pandas as pd
@@ -15,7 +16,6 @@ assembly_path = r"C:/Users/qv18366/OneDrive - University of Bristol/Desktop/Sant
 sys.path.append(assembly_path)
 ref = clr.AddReference(r"Santec_FTDI")
 import Santec_FTDI as ftdi# Importing the main method from the DLL
-
 # Calling the FTD2xx_helper class from the Santec_FTDI dll
 ftdi_class = ftdi.FTD2xx_helper
 
@@ -28,10 +28,12 @@ power_meter = ThorlabsPM100(inst=pm_handle)
 TSL550_Laser = ftdi.FTD2xx_helper("19100002")
 
 wl_c = 1550#nm
-span = 20#nm
+span = 5#nm
 step = 0.001;#step [nm]
 
 Optical_power = 1.0 #dBm
+
+measure_wait = 0.025#s time between switching laser wvl and measuring pow
 
 wl_start = wl_c - span/2; # start wavelength [nm]
 wl_end = wl_c + span/2; # stop wavelength [nm]
@@ -59,11 +61,13 @@ TSL550_Laser.Write("SO")#Open Shutter
 TSL550_Laser.Write("WA{}".format(wls[0]))
 time.sleep(1)
 power_meter.read
+init_time = time.time()
 for i, wl in enumerate(wls):
       TSL550_Laser.Write("WA{}".format(wl))
-      time.sleep(0.025)
+      time.sleep(measure_wait)
       pows[i] = power_meter.read
       print("{} {}".format(wl, pows[i]))
+      #print(progress_bar_time(j*len(appl_voltage)+i+1, len(laser_voltage*len(laser_power))+1, time.time()-laser_start_time))
 
 TSL550_Laser.Write("SC")#Close Shutter
 
@@ -74,7 +78,7 @@ sweep_df.to_csv("{}/{}.csv".format(folder_path,file_name), index=False)
 
 fig = plt.figure()
 ax = fig.add_subplot()
-ax.scatter(wls, pows)
+ax.plot(wls, pows)
 ax.set_xlabel("Wavelengths (nm)")
 ax.set_ylabel
 fig.savefig("{}/wvl_sweep.png".format(folder_path, str(pow), cur_time))

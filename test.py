@@ -23,3 +23,4 @@ for device in list_of_devices:
   print(f'\nDevice Name: {device.Description},  Serial Number: {device.SerialNumber}')
 
 TSL550_Laser = ftdi.FTD2xx_helper("19100002")
+TSL550_Laser.Write("SO")#Open Shutter
