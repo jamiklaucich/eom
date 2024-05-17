@@ -21,26 +21,34 @@ ftdi_class = ftdi.FTD2xx_helper
 
 rm = visa.ResourceManager()
 rm.list_resources()
-
 pm_handle = rm.open_resource('USB0::0x1313::0x8072::P2001769::INSTR')
 power_meter = ThorlabsPM100(inst=pm_handle)
-
 TSL550_Laser = ftdi.FTD2xx_helper("19100002")
+keithley_2450 = rm.open_resource("USB0::0x05E6::0x2450::04610529::0::INSTR")
 
-keithley_2450 = rm.open_resource("USB0::0x05E6::0x2450::04131844::0::INSTR")
 wl_c = 1550#nm
-span = 5#nm
-step = 0.001;#step [nm]
+wl_span = 5#nm
+wl_step = 0.001;#step [nm]
+
+v_start = 0#V
+v_end = 5#V
+v_step = 0.5#V
 
 Optical_power = 1.0 #dBm
 
 measure_wait = 0.025#s time between switching laser wvl and measuring pow
 
-wl_start = wl_c - span/2; # start wavelength [nm]
-wl_end = wl_c + span/2; # stop wavelength [nm]
+wl_start = wl_c - wl_span/2; # start wavelength [nm]
+wl_end = wl_c + wl_span/2; # stop wavelength [nm]
 
-
-wls = np.linspace(wl_start, wl_end, int((wl_end-wl_start)/step+1))
+wls = np.linspace(wl_start, wl_end, int((wl_end-wl_start)/wl_step+1))
+voltages = np.linsspace(v_start,v_end, int((v_end-v_start)/v_step+1))
+keithley_2450.write(":ROUTe:TERMinals FRONt ")
+keithley_2450.write(":SOURce:FUNCtion VOLTage")
+keithley_2450.write("SOUR:VOLT:RANG:AUTO ON")
+keithley_2450.write("SENS:CURR:RANG:AUTO ON")
+keithley_2450.write("CURR:RANG:AUTO:LLIM 1e-4")
+keithley_2450.write(":SOURce:VOLTage:RANGe 10")
 
 ID = input("Enter Grating Designation")# to change accordingly
 cur_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -63,13 +71,15 @@ TSL550_Laser.Write("WA{}".format(wls[0]))
 time.sleep(1)
 power_meter.read
 init_time = time.time()
-for i, wl in enumerate(wls):
+
+keithley_2450.write(":OUTP ON")
+for j, wl in enumerate(wls):
       TSL550_Laser.Write("WA{}".format(wl))
       time.sleep(measure_wait)
-      pows[i] = power_meter.read
+      pows[j] = power_meter.read
       print("{} {}".format(wl, pows[i]))
       #print(progress_bar_time(j*len(appl_voltage)+i+1, len(laser_voltage*len(laser_power))+1, time.time()-laser_start_time))
-
+keithley_2450.write(":OUTP OFF")
 TSL550_Laser.Write("SC")#Close Shutter
 
 sweep_df = pd.DataFrame({"Wavelength (nm)":wls, 
