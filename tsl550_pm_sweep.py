@@ -29,11 +29,11 @@ TSL550_Laser = ftdi.FTD2xx_helper("19100002")
 
 wl_c = 1550#nm
 span = 5#nm
-step = 0.001;#step [nm]
+step = 0.005;#step [nm]
 
 Optical_power = 1.0 #dBm
 
-measure_wait = 0.025#s time between switching laser wvl and measuring pow
+measure_wait = 0.05#s time between switching laser wvl and measuring pow
 
 wl_start = wl_c - span/2; # start wavelength [nm]
 wl_end = wl_c + span/2; # stop wavelength [nm]
@@ -41,10 +41,10 @@ wl_end = wl_c + span/2; # stop wavelength [nm]
 
 wls = np.linspace(wl_start, wl_end, int((wl_end-wl_start)/step+1))
 
-ID = input("Enter Grating Designation")# to change accordingly
+ID = input("Enter Grating Designation: ")# to change accordingly
 cur_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-folder_path = os.getcwd()+"/Data/TSl550_Sweep/"+cur_time
-os.makedirs("{}{}".format(folder_path,ID), exist_ok=True)
+folder_path = "{}/Data/TSl550_Sweep/{} {}".format(os.getcwd(),cur_time,ID)
+os.makedirs("{}".format(folder_path), exist_ok=True)
 file_name = str(str(ID)+'Opt_power'+str(Optical_power)+'dBm-wl_c'+str(wl_c)+'-wl_span'+str(span)+'-step'+str(step))
 
 dBm=True
