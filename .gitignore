@@ -1,0 +1,6 @@
+__pycache__/
+voltage_sweep/
+const_voltage/
+.vscode/
+Data/
+*.Identifier
