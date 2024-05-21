@@ -49,23 +49,24 @@ def smu_source_sweep(smu, voltage, delay,  current_lim, nplc, repeats, funcs=Non
     return appl_voltage, current
 
 
-dv = 0.01 #V
+dv = 0.1 #V
 #voltage steps
 
 rev_bias_start = 0 #V
-rev_bias_end = 0 #V
-frwd_bias_start = 9 #V
-frwd_bias_end = 11 #V
+rev_bias_end = -0.8 #V
+frwd_bias_start = 0 #V
+frwd_bias_end = 20 #V
 
-meas_delay = 0.25#s
-current_limit = 30E-6#A
+meas_delay = 0.1#s
+current_limit = 100E-6#A
 nplc = 10
 num_repeats=1
+ID = input("Enter Grating Designation: ")# to change accordingly
 cur_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-folder_path = os.getcwd()+"/Data/voltage_sweep/"+cur_time
+folder_path = os.getcwd()+"/Data/voltage_sweep/"+cur_time+ID
 os.makedirs(folder_path, exist_ok=True)
 
-smu = Keithley2450("keithley", "USB0::0x05E6::0x2450::04131844::0::INSTR")
+smu = Keithley2450("keithley", "USB0::0x05E6::0x2450::04610529::0::INSTR")
 smu.reset()
 smu.terminals("front")
 smu.source.function("voltage")
@@ -78,14 +79,14 @@ smu.source.read_back_enabled(True)
 
 reset_delay=0.6#s length of time to run in forward bias to reset DUT
 initial_reset_delay = 20#s
-reset_current_limit = 50E-6#A
+reset_current_limit = 100E-6#A
 reset_voltage =-1#V
 
 reset_vars = [reset_voltage, reset_delay, reset_current_limit, current_limit]
 initial_reset_vars = [reset_voltage, initial_reset_delay, reset_current_limit, current_limit]
 
-#rev_num = int(1+abs(rev_bias_end-rev_bias_start)/dv)
-#rev_voltage = np.linspace(rev_bias_start, rev_bias_end, rev_num)
+rev_num = int(1+abs(rev_bias_end-rev_bias_start)/dv)
+rev_voltage = np.linspace(rev_bias_start, rev_bias_end, rev_num)
 frwd_num = int(1+abs(frwd_bias_end-frwd_bias_start)/dv)
 frwd_voltage = np.linspace(frwd_bias_start, frwd_bias_end, frwd_num)
 
@@ -93,13 +94,13 @@ with smu.output_enabled.set_to(True):
     print("\nResetting device for {}s".format(initial_reset_delay))
     frwd_bias_reset(*initial_reset_vars)
 
-#rev_appl_voltage, rev_current = smu_source_sweep(smu,rev_voltage, meas_delay,  current_limit, nplc)
+rev_appl_voltage, rev_current = smu_source_sweep(smu,rev_voltage, meas_delay,  current_limit, nplc, num_repeats)
 frwd_appl_voltage, frwd_current = smu_source_sweep(smu,frwd_voltage, meas_delay,  current_limit, nplc, num_repeats)
 
-#comb_voltage = np.concatenate((rev_appl_voltage, frwd_appl_voltage))
-#comb_current = np. concatenate((rev_current, frwd_current))
-comb_voltage = frwd_appl_voltage
-comb_current = frwd_current
+comb_voltage = np.concatenate((rev_appl_voltage, frwd_appl_voltage))
+comb_current = np. concatenate((rev_current, frwd_current))
+# comb_voltage = frwd_appl_voltage
+# comb_current = frwd_current
 #I-V plot
 # root = Tk()
 # root.attributes('-topmost', True)  # Display the dialog in the foreground.
@@ -111,7 +112,7 @@ comb_current = frwd_current
 #                                          initialfile="Current.csv")
 # root.destroy()
 current_df=pd.DataFrame({"Voltage (V)":comb_voltage, "Current": comb_current})
-current_df.to_csv("{}/source_sweep.csv".format(folder_path), index=False)
+current_df.to_csv("{}/{}source_sweep.csv".format(folder_path,cur_time), index=False)
 
 fig = plt.figure()
 ax = fig.add_subplot()

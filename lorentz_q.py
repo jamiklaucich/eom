@@ -22,6 +22,7 @@ if not file_path:
     exit()
 
 # Read the selected CSV file
+print(file_path)
 data = pd.read_csv(file_path)
 wavelength = data.iloc[:, 0].values
 power = data.iloc[:, 1].values
@@ -46,6 +47,10 @@ w0_fit, gamma_fit, A_fit, y0_fit = popt
 fwhm = gamma_fit
 Q_factor = w0_fit / fwhm
 
+print(f'Resonant wavelength (w0): {w0_fit}')
+print(f'Full Width at Half Maximum (FWHM): {fwhm}')
+print(f'Q-factor: {Q_factor}')
+
 # Plot the data and the fit
 plt.plot(wavelength, power, 'b-', label='data')
 plt.plot(wavelength, lorentzian(wavelength, *popt), 'r--', label='fit')
@@ -55,6 +60,3 @@ plt.legend()
 plt.title(f'Q-factor = {Q_factor:.2f}')
 plt.show()
 
-print(f'Resonant wavelength (w0): {w0_fit}')
-print(f'Full Width at Half Maximum (FWHM): {fwhm}')
-print(f'Q-factor: {Q_factor}')

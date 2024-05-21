@@ -26,17 +26,17 @@ power_meter = ThorlabsPM100(inst=pm_handle)
 TSL550_Laser = ftdi.FTD2xx_helper("19100002")
 keithley_2450 = rm.open_resource("USB0::0x05E6::0x2450::04610529::0::INSTR")
 
-wl_c = 1550.5#nm
-wl_span = 1.5#nm
-wl_step = 0.001;#step [nm]
+wl_c = 1550#nm
+wl_span = 2#nm
+wl_step = 0.005;#step [nm]
 
 v_start = 0#V
-v_end = -.7#V
-v_step = -.7#V
+v_end = 10#V
+v_step = 1.0#V
 
 Optical_power = 1.0 #dBm
 
-measure_wait = 0.025#s time between switching laser wvl and measuring pow
+measure_wait = 0.075#s time between switching laser wvl and measuring pow
 
 wl_start = wl_c - wl_span/2; # start wavelength [nm]
 wl_end = wl_c + wl_span/2; # stop wavelength [nm]
@@ -51,11 +51,12 @@ keithley_2450.write("SENS:CURR:RANG:AUTO ON")
 keithley_2450.write("CURR:RANG:AUTO:LLIM 1e-4")
 keithley_2450.write(":SOURce:VOLTage:RANGe 10")
 
-ID = input("Enter Grating Designation")# to change accordingly
+ID = input("Enter Device Designation: ")# to change accordingly
 cur_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-folder_path = "{}/Data/TSl550_Sweep/{} {}".format(os.getcwd(),cur_time,ID)
+folder_path = "{}/Data/TSl550_Mod_Sweep/{} {}".format(os.getcwd(),cur_time,ID)
 os.makedirs("{}".format(folder_path), exist_ok=True)
-file_names = ["{}-voltage{}-Opt_power{}dBm-wl_c{}-wl_span{}-step{}".format(ID, v, Optical_power, wl_c, wl_span, wl_step) for v in voltages]
+file_names = ["{}-voltage{}-Opt_power{}dBm-wl_c{}-wl_span{}-step{}".format(ID, v, Optical_power, wl_c, wl_span, wl_step) 
+              for v in voltages]
 
 dBm=True
 unit='mW'

@@ -28,7 +28,7 @@ power_meter = ThorlabsPM100(inst=pm_handle)
 TSL550_Laser = ftdi.FTD2xx_helper("19100002")
 
 wl_c = 1550#nm
-span = 5#nm
+span = 2#nm
 step = 0.005;#step [nm]
 
 Optical_power = 1.0 #dBm
