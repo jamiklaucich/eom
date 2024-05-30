@@ -53,13 +53,13 @@ dv = 0.1 #V
 #voltage steps
 
 rev_bias_start = 0 #V
-rev_bias_end = -0.8 #V
+rev_bias_end = -1.0 #V
 frwd_bias_start = 0 #V
-frwd_bias_end = 20 #V
+frwd_bias_end = 13 #V
 
 meas_delay = 0.1#s
 current_limit = 100E-6#A
-nplc = 10
+nplc = 1
 num_repeats=1
 ID = input("Enter Grating Designation: ")# to change accordingly
 cur_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -77,7 +77,7 @@ smu.write(":SOURce:VOLTage:RANGe 10")
 smu.source.read_back_enabled(True)
 #Keithley 2450 VISA address
 
-reset_delay=0.6#s length of time to run in forward bias to reset DUT
+reset_delay=1.0#s length of time to run in forward bias to reset DUT
 initial_reset_delay = 20#s
 reset_current_limit = 100E-6#A
 reset_voltage =-1#V

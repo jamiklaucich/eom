@@ -24,66 +24,58 @@ rm.list_resources()
 pm_handle = rm.open_resource("USB0::0x1313::0x8078::P0007727::0::INSTR")
 power_meter = ThorlabsPM100(inst=pm_handle)
 TSL550_Laser = ftdi.FTD2xx_helper("19100002")
-keithley_2450 = rm.open_resource("USB0::0x05E6::0x2450::04610529::0::INSTR")
 
 wl_c = 1550.25#nm
 wl_span = 1.5#nm
-wl_step = 0.005;#step [nm]
+wl_step = 0.01;#step [nm]
 
-v_start = 0#V
-v_end = 11#V
-v_step = 1.0#V
+mW=True
+opow_start = 0.05
+opow_end = 10.05
+opow_step = 2.5
 
-Optical_power = 0 #dBm
+opow_num = int(2+(opow_end-opow_start)/opow_step)
 
-measure_wait = 0.5#s time between switching laser wvl and measuring pow
+opows = np.linspace(opow_start,opow_end,opow_num)
+
+measure_wait = 0.25#s time between switching laser wvl and measuring pow
 
 wl_start = wl_c - wl_span/2; # start wavelength [nm]
 wl_end = wl_c + wl_span/2; # stop wavelength [nm]
 
 wls = np.linspace(wl_start, wl_end, int((wl_end-wl_start)/wl_step+1))
-voltages = np.linspace(v_start,v_end, int((v_end-v_start)/v_step+1))
 
-keithley_2450.write(":ROUTe:TERMinals FRONt ")
-keithley_2450.write(":SOURce:FUNCtion VOLTage")
-keithley_2450.write("SOUR:VOLT:RANG:AUTO ON")
-keithley_2450.write("SENS:CURR:RANG:AUTO ON")
-keithley_2450.write("CURR:RANG:AUTO:LLIM 1e-4")
-keithley_2450.write(":SOURce:VOLTage:RANGe 10")
 
 ID = input("Enter Device Designation: ")# to change accordingly
 cur_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-folder_path = "{}/Data/TSl550_Mod_Sweep/{} {}".format(os.getcwd(),cur_time,ID)
+folder_path = "{}/Data/sweep_opt_wav_meas_opt/{} {}".format(os.getcwd(),cur_time,ID)
 os.makedirs("{}".format(folder_path), exist_ok=True)
-file_names = ["{}-voltage{}-Opt_power{}dBm-wl_c{}-wl_span{}-step{}".format(ID, v, Optical_power, wl_c, wl_span, wl_step) 
-              for v in voltages]
+file_names = [f"{ID}-Opt_power{opt}dBm-wl_c{wl_c}-wl_span{wl_span}-step{wl_step}"
+              for opt in opows]
 
-dBm=True
-unit='mW'
-if dBm==True:
-	unit=' dBm'
-	
-
+unit="dBm"
+if (mW):
+    unit="mW"
 #TSL550_Laser.clear()
 
-pows = np.zeros((len(voltages),len(wls)))
-sweep_dfs = np.zeros_like(voltages, dtype=object)
+pows = np.zeros((len(opows),len(wls)))
+sweep_dfs = np.zeros_like(opows, dtype=object)
 
+TSL550_Laser.Write(f"POW:UNIT {int(mW)}")
 TSL550_Laser.Write("SO")#Open Shutter
 TSL550_Laser.Write("WA{}".format(wls[0]))
 time.sleep(1)
 power_meter.read
-keithley_2450.write(":OUTP ON")
 
 init_time = time.time()
-for i, v in enumerate(voltages):
-      keithley_2450.write("SOUR:VOLT {}".format(v))
+for i, opow in enumerate(opows):
+      TSL550_Laser.Write(f"LP{opow}")
       time.sleep(measure_wait)
       for j, wl in enumerate(wls):
             TSL550_Laser.Write("WA{}".format(wl))
             time.sleep(measure_wait)
             pows[i][j] = power_meter.read
-            print("{} {}".format(wl, pows[i][j]))
+            print(f"{opow:.4f}mW \t{wl:.4f}nm \t{pows[i][j]:.4g}W")
             #print(progress_bar_time(j*len(appl_voltage)+i+1, len(laser_voltage*len(laser_power))+1, time.time()-laser_start_time))
       sweep_dfs[i] = pd.DataFrame({"Wavelength (nm)":wls, 
                         "Power (W)": pows[i]})
@@ -95,7 +87,6 @@ for i, v in enumerate(voltages):
       ax.set_ylabel("Optical Power (W)")
       fig.savefig("{}/wvl_sweep{}.png".format(folder_path, file_names[i]))
 
-keithley_2450.write(":OUTP OFF")
 TSL550_Laser.Write("SC")#Close Shutter
 
 

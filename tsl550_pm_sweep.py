@@ -27,7 +27,7 @@ power_meter = ThorlabsPM100(inst=pm_handle)
 
 TSL550_Laser = ftdi.FTD2xx_helper("19100002")
 
-wl_c = 1550#nm
+wl_c = 1549#nm
 span = 2#nm
 step = 0.005;#step [nm]
 
@@ -37,7 +37,6 @@ measure_wait = 0.05#s time between switching laser wvl and measuring pow
 
 wl_start = wl_c - span/2; # start wavelength [nm]
 wl_end = wl_c + span/2; # stop wavelength [nm]
-
 
 wls = np.linspace(wl_start, wl_end, int((wl_end-wl_start)/step+1))
 

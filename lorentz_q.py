@@ -46,10 +46,12 @@ w0_fit, gamma_fit, A_fit, y0_fit = popt
 # Calculate the Q-factor
 fwhm = gamma_fit
 Q_factor = w0_fit / fwhm
+ext = np.max(power)/np.min(power)
 
 print(f'Resonant wavelength (w0): {w0_fit}')
 print(f'Full Width at Half Maximum (FWHM): {fwhm}')
 print(f'Q-factor: {Q_factor}')
+print(f"Extinction Factor: {ext}")
 
 # Plot the data and the fit
 plt.plot(wavelength, power, 'b-', label='data')
