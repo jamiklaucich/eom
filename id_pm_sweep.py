@@ -15,20 +15,20 @@ import time
 rm = visa.ResourceManager()
 rm.list_resources()
 
-pm_handle = rm.open_resource('USB0::0x1313::0x8072::P2001769::INSTR')
+pm_handle = rm.open_resource("USB0::0x1313::0x8078::P0007727::0::INSTR")
 power_meter = ThorlabsPM100(inst=pm_handle)
 id_laser = rm.open_resource('ASRL4::INSTR',send_end=True, read_termination='\n')
 id_laser.baud_rate= 115200
 id_laser.timeout=2000
 
 
-wl_c = 1549#nm
-span = 2#nm
-step = 0.005;#step [nm]
+wl_c = 1550.235#nm
+span = 1.5#nm
+step = 0.01;#step [nm]
 
 Optical_power = 1.0 #dBm
 
-measure_wait = 0.05#s time between switching laser wvl and measuring pow
+measure_wait = 7.0#s time between switching laser wvl and measuring pow
 
 wl_start = wl_c - span/2; # start wavelength [nm]
 wl_end = wl_c + span/2; # stop wavelength [nm]
@@ -37,7 +37,7 @@ wls = np.linspace(wl_start, wl_end, int((wl_end-wl_start)/step+1))
 
 ID = input("Enter Grating Designation: ")# to change accordingly
 cur_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-folder_path = "{}/Data/TSl550_Sweep/{} {}".format(os.getcwd(),cur_time,ID)
+folder_path = "{}/Data/ID_Sweep/{} {}".format(os.getcwd(),cur_time,ID)
 os.makedirs("{}".format(folder_path), exist_ok=True)
 file_name = str(str(ID)+'Opt_power'+str(Optical_power)+'dBm-wl_c'+str(wl_c)+'-wl_span'+str(span)+'-step'+str(step))
 
@@ -51,15 +51,15 @@ if dBm==True:
 
 pows = np.zeros_like(wls)
 
-id_laser.Write(f"WAV {wls[0]}")
+id_laser.write(f"WAV {wls[0]}")
 time.sleep(1)
 power_meter.read
 init_time = time.time()
 for i, wl in enumerate(wls):
-      id_laser.Write(f"WAV {wl}")
+      id_laser.write(f"WAV {wl}")
       time.sleep(measure_wait)
       pows[i] = power_meter.read
-      print("{} {}".format(wl, pows[i]))
+      print(f"{wl:.4f}nm\t{pows[i]:.4g}W")
       #print(progress_bar_time(j*len(appl_voltage)+i+1, len(laser_voltage*len(laser_power))+1, time.time()-laser_start_time))
 
 
