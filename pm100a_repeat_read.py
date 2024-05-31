@@ -15,7 +15,7 @@ os.makedirs(folder_path, exist_ok=True)
 
 rm = pyvisa.ResourceManager()
 
-time_length = 200
+time_length = 700
 measurements = np.zeros(time_length*1000)
 times = np.zeros_like(measurements)
 inst = rm.open_resource("USB0::0x1313::0x8078::P0007727::0::INSTR")
@@ -30,7 +30,7 @@ while (measure_time)<time_length:
     measurements[i] = measurement
     measure_time = time.perf_counter()-start_time
     if(i%150==0):
-        print(f"#{i}:\t\t{measure_time:.1f}s\t/{time_length}s:\t{measurement:.6g}W")
+        print(f"#{i}:\t{measure_time:.1f}s\t/{time_length}s:\t{measurement:.6g}W")
     times[i] = measure_time
     i+=1
 
