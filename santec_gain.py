@@ -41,8 +41,8 @@ TSL550_Laser = ftdi.FTD2xx_helper("19100002")
 wl_c = 1550.25#nm
 
 bias_start = 0 #V
-bias_end = 13 #V
-dv = 0.1 #V
+bias_end = 2 #V
+dv = 1 #V
 
 unit_gain_voltage=1#V
 
