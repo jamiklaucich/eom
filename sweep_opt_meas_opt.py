@@ -11,7 +11,7 @@ import clr
 import sys
 import time
 
-# Checking and Accessing the DLL (Santec_FTDI) [make sure the DLLs are in the same directory as the script]
+
 assembly_path = r"C:/Users/qv18366/OneDrive - University of Bristol/Desktop/Santec/DLL"  # device-class path
 sys.path.append(assembly_path)
 ref = clr.AddReference(r"Santec_FTDI")
