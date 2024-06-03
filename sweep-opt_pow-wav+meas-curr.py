@@ -27,22 +27,28 @@ TSL550_Laser = ftdi.FTD2xx_helper("19100002")
 keithley_2450 = rm.open_resource("USB0::0x05E6::0x2450::04610529::0::INSTR")
 
 wl_c = 1550.25#nm
-wl_span = 40#nm
+wl_span = 1#nm
 wl_step = 0.01#nm
+reverse=False#Flag to go from high wav to low
 
-v=1#V to sweep current out
+v=11.55#V to sweep current out
 
 mW=True
-opow_start = 0.05
-opow_end = 10
-opow_step = 0.05
+opow_start = 0.1
+opow_end = 10.1
+opow_step = 5
 
-opow_num = int(2+(opow_end-opow_start)/opow_step)
+opow_num = int(1+(opow_end-opow_start)/opow_step)
 opows = np.linspace(opow_start,opow_end,opow_num)
 
 wl_start = wl_c - wl_span/2; # start wavelength [nm]
 wl_end = wl_c + wl_span/2; # stop wavelength [nm]
-wls = np.linspace(wl_start, wl_end, int((wl_end-wl_start)/wl_step+1))
+if(reverse):
+    temp=wl_start
+    wl_start=wl_end
+    wl_end=temp
+
+wls = np.linspace(wl_start, wl_end, int((abs(wl_end-wl_start)/wl_step)+1))
 
 unit="dBm"
 if (mW):
@@ -65,7 +71,7 @@ cur_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 folder_path = (f"{os.getcwd()}/Data/Sweep_Opt_Meas_Curr/{cur_time} {ID}")
 os.makedirs(f"{folder_path}", exist_ok=True)
 
-file_names = ["f{ID}-voltage{voltage}-Opt_pow{opow}-wl_c{wl_c}-wl_span{wl_span}" 
+file_names = [f"{ID}-voltage{v}-Opt_pow{opow}-wl_c{wl_c}-wl_span{wl_span}" 
               for opow in opows]
 
 TSL550_Laser.Write(f"POW:UNIT {int(mW)}")#set power unit (0-dbm, 1-mW)
@@ -87,11 +93,11 @@ for i, opow in enumerate(opows):
     for j, wl in enumerate(wls):
         TSL550_Laser.Write("WA{}".format(wl))
         time.sleep(measure_wait)
-        current_meas = keithley_2450.query(':MEASure:CURRent? "defbuffer1"')
-        pow_meas = power_meter.read
+        current_meas = float(keithley_2450.query(':MEASure:CURRent? "defbuffer1"'))
+        pow_meas = float(power_meter.read)
         current[i][j] = current_meas
         pows[i][j] = pow_meas
-        print("{opow:.4f}mW\t{wl}nm\t{current_meas:.4g}A\t{pow_meas:.4g}W")
+        print(f"{opow:.4f}mW\t{wl}nm\t{current_meas:.4g}A\t{pow_meas:.4g}W")
         time.sleep(post_wait)
         #print(progress_bar_time(j*len(appl_voltage)+i+1, len(laser_voltage*len(laser_power))+1, time.time()-laser_start_time))
 
@@ -102,17 +108,17 @@ for i, opow in enumerate(opows):
     sweep_dfs[i].to_csv(f"{folder_path}/{file_names[i]}.csv", index=False)
     fig = plt.figure()
     ax = fig.add_subplot()
-    ax.plot(opows, pows)
-    ax.set_xlabel("Optical Power In (W)")
+    ax.plot(wls, pows[i])
+    ax.set_xlabel("Wavelength (nm)")
     ax.set_ylabel("Optical Power Out (W)")
     fig.savefig(f"{folder_path}/wvl_sweep{file_names[i]}.png")
 
     fig = plt.figure()
     ax = fig.add_subplot()
-    ax.plot(opows, current)
-    ax.set_xlabel("Optical Power In (mW)")
+    ax.plot(wls, current[i])
+    ax.set_xlabel("Wavelength (nm)")
     ax.set_ylabel("Current (A)")
-    fig.savefig("{}/cur_sweep{}.png".format(folder_path, file_names[i]))
+    fig.savefig(f"{folder_path}/cur_sweep{file_names[i]}.png")
 
 keithley_2450.write(":OUTP OFF")
 TSL550_Laser.Write("SC")#Close Shutter
