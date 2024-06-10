@@ -42,7 +42,8 @@ def smu_source_sweep(smu, voltage, delay,  current_lim, nplc, repeats, funcs=Non
                 rep_measure[j] = smu.sense.current()
                 if(smu.source.limit_tripped()):
                     tripped=True
-                frwd_bias_reset(*reset_vars)
+                if(frwd_reset):
+                    frwd_bias_reset(*reset_vars)
             current[i] = sum(rep_measure)/repeats
             print("Voltage: {:.4f}V ".format(v)+progress_bar_time(i+1, len(voltage)+1, time.time()-start_time))
 
@@ -52,15 +53,17 @@ def smu_source_sweep(smu, voltage, delay,  current_lim, nplc, repeats, funcs=Non
 dv = 0.1 #V
 #voltage steps
 
-rev_bias_start = 0 #V
-rev_bias_end = -1.0 #V
+rev_bias_start = 11.5 #V
+rev_bias_end = 0 #V
 frwd_bias_start = 0 #V
-frwd_bias_end = 13 #V
+frwd_bias_end = 11.5 #V
 
 meas_delay = 0.1#s
 current_limit = 100E-6#A
 nplc = 1
 num_repeats=1
+
+frwd_reset=False
 ID = input("Enter Grating Designation: ")# to change accordingly
 cur_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 folder_path = os.getcwd()+"/Data/voltage_sweep/"+cur_time+ID
@@ -92,10 +95,12 @@ frwd_voltage = np.linspace(frwd_bias_start, frwd_bias_end, frwd_num)
 
 with smu.output_enabled.set_to(True):
     print("\nResetting device for {}s".format(initial_reset_delay))
-    frwd_bias_reset(*initial_reset_vars)
+    if(frwd_reset):
+        frwd_bias_reset(*initial_reset_vars)
 
-rev_appl_voltage, rev_current = smu_source_sweep(smu,rev_voltage, meas_delay,  current_limit, nplc, num_repeats)
 frwd_appl_voltage, frwd_current = smu_source_sweep(smu,frwd_voltage, meas_delay,  current_limit, nplc, num_repeats)
+rev_appl_voltage, rev_current = smu_source_sweep(smu,rev_voltage, meas_delay,  current_limit, nplc, num_repeats)
+
 
 comb_voltage = np.concatenate((rev_appl_voltage, frwd_appl_voltage))
 comb_current = np. concatenate((rev_current, frwd_current))
