@@ -7,6 +7,8 @@ import pandas as pd
 import numpy as np
 from utilities.ThorlabsPM100.ThorlabsPM100 import *
 from datetime import datetime
+from res_pow_calib import *
+from osa_calibration import *
 
 import matplotlib.pyplot as plt
 
@@ -31,12 +33,18 @@ import Santec_FTDI as ftdi# Importing the main method from the DLL
 ftdi_class = ftdi.FTD2xx_helper
 TSL550_Laser = ftdi.FTD2xx_helper("19100002")
 
+
+
 rm = visa.ResourceManager()
 print(rm.list_resources())
 osa = rm.open_resource('ASRL5::INSTR',
                            write_termination = '\n',
                            read_termination = '\n')
 osa.timeout=2000
+power_meter = ThorlabsPM100(inst=rm.open_resource("USB0::0x1313::0x8078::P0007727::0::INSTR"))
+
+wl_off, wl_ext=wavelength_calibration(osa, TSL550_Laser, pow_cal=False, l_wait=0.5, o_wait=2, wl_span=2):
+
 wl=1550.44
 mW=True
 opow_start = 0.05
@@ -50,53 +58,54 @@ opow_num = int(1+(opow_end-opow_start)/opow_step)
 opows = np.linspace(opow_start,opow_end,opow_num)
 measure_wait = 0.25#s time between switching laser wvl and measuring pow
 
+res_wls=res_pow_calib(TSL550_Laser, power_meter, opows, wl_init=1550, wl_span=1, wl_step = 0.01,measure_wait=1 )
+res_wls
+# ID = input("Enter Device Designation: ")# to change accordingly
+# cur_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+# folder_path = "{}/Data/osa_curr/{} {}".format(os.getcwd(),cur_time,ID)
+# os.makedirs("{}".format(folder_path), exist_ok=True)
+# file_name = f"{ID}-Opt_power{opow_start}dBm"
 
-ID = input("Enter Device Designation: ")# to change accordingly
-cur_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-folder_path = "{}/Data/osa_curr/{} {}".format(os.getcwd(),cur_time,ID)
-os.makedirs("{}".format(folder_path), exist_ok=True)
-file_name = f"{ID}-Opt_power{opow_start}dBm"
+# unit="dBm"
+# if (mW):
+#     unit="mW"
 
-unit="dBm"
-if (mW):
-    unit="mW"
+# TSL550_Laser.Write(f"POW:UNIT {int(mW)}")
+# TSL550_Laser.Write("SO")#Open Shutter
+# TSL550_Laser.Write("WA{}".format(wl))
+# #TSL550_Laser.clear()
 
-TSL550_Laser.Write(f"POW:UNIT {int(mW)}")
-TSL550_Laser.Write("SO")#Open Shutter
-TSL550_Laser.Write("WA{}".format(wl))
-#TSL550_Laser.clear()
+# # osa.write("*RST")
 
-# osa.write("*RST")
+# osa_init()
+# #print(osa.read())
+# #osa.write("PWR 1550")
+# pows = np.zeros_like(opows)
+# init_time = time.time()
+# for i, opow in enumerate(opows):
+#     TSL550_Laser.Write(f"LP{opow}")
+#     time.sleep(measure_wait)
+#     osa.write("SSI")
+#     sweep_done = osa_wait("ESR2?")
+#     osa.write("PKS PEAK")
+#     peak_done = osa_wait("ESR2?")
+#     osa.write("TMK?")
+#     osa_res = osa.read().split(",")
+#     pows[i] = 10**(float(osa_res[1][:-4])/10)
 
-osa_init()
-#print(osa.read())
-#osa.write("PWR 1550")
-pows = np.zeros_like(opows)
-init_time = time.time()
-for i, opow in enumerate(opows):
-    TSL550_Laser.Write(f"LP{opow}")
-    time.sleep(measure_wait)
-    osa.write("SSI")
-    sweep_done = osa_wait("ESR2?")
-    osa.write("PKS PEAK")
-    peak_done = osa_wait("ESR2?")
-    osa.write("TMK?")
-    osa_res = osa.read().split(",")
-    pows[i] = 10**(float(osa_res[1][:-4])/10)
+# # Split the string by comma
+#     print(f"{opow:.4f}mW \t{float(osa_res[0]):.4f}nm \t{pows[i]:.4g}W")
+#             #print(progress_bar_time(j*len(appl_voltage)+i+1, len(laser_voltage*len(laser_power))+1, time.time()-laser_start_time))
 
-# Split the string by comma
-    print(f"{opow:.4f}mW \t{float(osa_res[0]):.4f}nm \t{pows[i]:.4g}W")
-            #print(progress_bar_time(j*len(appl_voltage)+i+1, len(laser_voltage*len(laser_power))+1, time.time()-laser_start_time))
+# TSL550_Laser.Write("SC")#Close Shutter
 
-TSL550_Laser.Write("SC")#Close Shutter
-
-sweep_df = pd.DataFrame({"Pump in Power (mW)":opows, 
-                "Probe Out Power (W)": pows})
-sweep_df.to_csv("{}/{}.csv".format(folder_path,file_name), index=False)
-fig = plt.figure()
-ax = fig.add_subplot()
-ax.plot(opows, pows)
-ax.set_xlabel("Pump in Power (mW)")
-ax.set_ylabel("Probe Out Power (mW)")
-fig.savefig("{}/wvl_sweep{}.png".format(folder_path, file_name))
-plt.show()
+# sweep_df = pd.DataFrame({"Pump in Power (mW)":opows, 
+#                 "Probe Out Power (W)": pows})
+# sweep_df.to_csv("{}/{}.csv".format(folder_path,file_name), index=False)
+# fig = plt.figure()
+# ax = fig.add_subplot()
+# ax.plot(opows, pows)
+# ax.set_xlabel("Pump in Power (mW)")
+# ax.set_ylabel("Probe Out Power (mW)")
+# fig.savefig("{}/wvl_sweep{}.png".format(folder_path, file_name))
+# plt.show()
