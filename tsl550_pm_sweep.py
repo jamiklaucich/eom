@@ -22,14 +22,14 @@ ftdi_class = ftdi.FTD2xx_helper
 rm = visa.ResourceManager()
 rm.list_resources()
 
-pm_handle = rm.open_resource('USB0::0x1313::0x8072::P2001769::INSTR')
+pm_handle = rm.open_resource('USB0::0x1313::0x8078::P0007727::INSTR')
 power_meter = ThorlabsPM100(inst=pm_handle)
 
 TSL550_Laser = ftdi.FTD2xx_helper("19100002")
 
-wl_c = 1549#nm
-span = 2#nm
-step = 0.005;#step [nm]
+wl_c = 1550.3#nm
+span = 1.5#nm
+step = 0.01;#step [nm]
 
 Optical_power = 1.0 #dBm
 

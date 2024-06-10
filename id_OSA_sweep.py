@@ -11,6 +11,20 @@ import clr
 import sys
 import time
 
+def osa_wait(command):
+    comp=0
+    time.sleep(repeat_time)
+    while not comp:
+        osa.write(command)
+        comp=int(osa.read())
+    return(comp)
+
+def osa_init():
+    osa.write("*IDN?")
+    osa.write("BUZ OFF")
+    osa.write("EMK")
+
+
 
 rm = visa.ResourceManager()
 rm.list_resources()
@@ -20,15 +34,19 @@ power_meter = ThorlabsPM100(inst=pm_handle)
 id_laser = rm.open_resource('ASRL4::INSTR',send_end=True, read_termination='\n')
 id_laser.baud_rate= 115200
 id_laser.timeout=2000
+osa = rm.open_resource('ASRL5::INSTR',
+                           write_termination = '\n',
+                           read_termination = '\n')
+osa.timeout=2000
 
-
-wl_c = 1550.6#nm
+wl_c = 1530.6#nm
 span = .25#nm
 step = 0.01;#step [nm]
 
 Optical_power = 1.0 #dBm
 
 measure_wait = 7.0#s time between switching laser wvl and measuring pow
+repeat_time=2
 
 wl_start = wl_c - span/2; # start wavelength [nm]
 wl_end = wl_c + span/2; # stop wavelength [nm]
@@ -37,7 +55,7 @@ wls = np.linspace(wl_start, wl_end, int((wl_end-wl_start)/step+1))
 
 ID = input("Enter Grating Designation: ")# to change accordingly
 cur_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-folder_path = "{}/Data/ID_Sweep/{} {}".format(os.getcwd(),cur_time,ID)
+folder_path = "{}/Data/ID_OSA_Sweep/{} {}".format(os.getcwd(),cur_time,ID)
 os.makedirs("{}".format(folder_path), exist_ok=True)
 file_name = str(str(ID)+'Opt_power'+str(Optical_power)+'dBm-wl_c'+str(wl_c)+'-wl_span'+str(span)+'-step'+str(step))
 
@@ -46,7 +64,7 @@ unit='mW'
 if dBm==True:
 	unit=' dBm'
 	
-
+osa_init()
 #TSL550_Laser.clear()
 
 pows = np.zeros_like(wls)
@@ -58,13 +76,18 @@ init_time = time.time()
 for i, wl in enumerate(wls):
       id_laser.write(f"WAV {wl}")
       time.sleep(measure_wait)
-      pows[i] = power_meter.read
+      osa.write("SSI")
+      sweep_done = osa_wait("ESR2?")
+      osa.write("PKS PEAK")
+      peak_done = osa_wait("ESR2?")
+      osa.write("TMK?")
+      pows[i] = 10**(float(osa.read().split(",")[1][:-4])/10)
       print(f"{wl:.4f}nm\t{pows[i]:.4g}W")
       #print(progress_bar_time(j*len(appl_voltage)+i+1, len(laser_voltage*len(laser_power))+1, time.time()-laser_start_time))
 
 
 sweep_df = pd.DataFrame({"Wavelength (nm)":wls, 
-                        "Power (W)": pows})
+                        "Power (mW)": pows})
 
 sweep_df.to_csv("{}/{}.csv".format(folder_path,file_name), index=False)
 

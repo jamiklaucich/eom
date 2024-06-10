@@ -25,7 +25,7 @@ pm_handle = rm.open_resource("USB0::0x1313::0x8078::P0007727::0::INSTR")
 power_meter = ThorlabsPM100(inst=pm_handle)
 TSL550_Laser = ftdi.FTD2xx_helper("19100002")
 
-wl_c = 1550.25#nm
+wl_c = 1530.0#nm
 wl_span = 1.5#nm
 wl_step = 0.01;#step [nm]
 
@@ -34,7 +34,7 @@ opow_start = 0.05
 opow_end = 10.05
 opow_step = 2.5
 
-opow_num = int(2+(opow_end-opow_start)/opow_step)
+opow_num = int(1+(opow_end-opow_start)/opow_step)
 
 opows = np.linspace(opow_start,opow_end,opow_num)
 
