@@ -33,8 +33,6 @@ import Santec_FTDI as ftdi# Importing the main method from the DLL
 ftdi_class = ftdi.FTD2xx_helper
 TSL550_Laser = ftdi.FTD2xx_helper("17050019")
 
-
-
 rm = visa.ResourceManager()
 print(rm.list_resources())
 id_laser = rm.open_resource('ASRL4::INSTR',send_end=True, read_termination='\n')
@@ -46,7 +44,8 @@ osa = rm.open_resource('ASRL5::INSTR',
 osa.timeout=2000
 power_meter = ThorlabsPM100(inst=rm.open_resource("USB0::0x1313::0x8078::P0007727::0::INSTR"))
 
-
+id_laser.Write("SOUR:STATe 0")
+TSL550_Laser.Write("SC")
 
 pump_init_wl=1550.29
 probe_init_wl = 1530.6
@@ -69,11 +68,14 @@ probe_wl_d = np.linspace(-0.5*probe_span,0.5*probe_span, probe_num)
 opow_num = int(1+(opow_end-opow_start)/opow_step)
 
 opows = np.linspace(opow_start,opow_end,opow_num)
-
+ID = input("Enter Device Designation: ")# to change accordingly
+cur_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+folder_path = "{}/Data/osa_curr/{} {}".format(os.getcwd(),cur_time,ID)
+os.makedirs("{}".format(folder_path), exist_ok=True)
+file_name = f"{ID}-Opt_power{opow_start}dBm"
 calib_flag=input("Enter any character to calibrate resonances with power input. Else previous resonance data is used")
 if(calib_flag):
-    res_wls=res_pow_calib(TSL550_Laser, power_meter, opows, pump_init_wl, wl_span, wl_step = 0.01,measure_wait=calib_measure_wait )
-    res_wls_df = pd.DataFrame({"Powers (mW)": opows, "Wavelengths (nm)": res_wls})
+    res_wls,res_wls_df=res_pow_calib(TSL550_Laser, power_meter, opows, pump_init_wl, wl_span, wl_step = 0.01,measure_wait=calib_measure_wait, folder_path=folder_path )
     res_wls_df.to_csv("Resonant_Wavelengths.csv")
     input("Proceed?")
 else:
@@ -87,11 +89,7 @@ probe_wls = probe_init_wl+res_wls_dl
 #wl_off, wl_ext=wavelength_calibration(osa, TSL550_Laser, pow_cal=False, l_wait=0.25, o_wait=2)
 #print(f"{wl_off} {wl_ext}")
 print(f"{res_wls}")
-ID = input("Enter Device Designation: ")# to change accordingly
-cur_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-folder_path = "{}/Data/osa_curr/{} {}".format(os.getcwd(),cur_time,ID)
-os.makedirs("{}".format(folder_path), exist_ok=True)
-file_name = f"{ID}-Opt_power{opow_start}dBm"
+
 
 unit="dBm"
 if (mW):
@@ -100,6 +98,7 @@ if (mW):
 TSL550_Laser.Write(f"POW:UNIT {int(mW)}")
 TSL550_Laser.Write("SO")#Open Shutter
 TSL550_Laser.Write("WA{}".format(res_wls[0]))
+id_laser.Write("SOUR:STATe 1")
 #TSL550_Laser.clear()
 
 # osa.write("*RST")
