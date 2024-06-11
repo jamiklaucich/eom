@@ -25,15 +25,15 @@ rm.list_resources()
 pm_handle = rm.open_resource('USB0::0x1313::0x8078::P0007727::INSTR')
 power_meter = ThorlabsPM100(inst=pm_handle)
 
-TSL550_Laser = ftdi.FTD2xx_helper("19100002")
+TSL550_Laser = ftdi.FTD2xx_helper("17050019")
 
-wl_c = 1550.3#nm
-span = 1.5#nm
-step = 0.01;#step [nm]
+wl_c = 1530.5#nm
+span = 0.5#nm
+step = 0.005;#step [nm]
 
 Optical_power = 1.0 #dBm
 
-measure_wait = 0.05#s time between switching laser wvl and measuring pow
+measure_wait = 0.25#s time between switching laser wvl and measuring pow
 
 wl_start = wl_c - span/2; # start wavelength [nm]
 wl_end = wl_c + span/2; # stop wavelength [nm]

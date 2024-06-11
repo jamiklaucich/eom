@@ -38,13 +38,14 @@ def osa_wait(osa,command, repeat_time=2):
         comp=int(osa.read())
     return(comp)
 
-def wavelength_calibration(osa, laser, pow_cal=False, l_wait=0.5, o_wait=2, wl_span=2):
+def wavelength_calibration(osa, laser, pow_cal=False, l_wait=0.5, o_wait=2, wl_span=4):
     calib_wl=1550#nm
     opow=1#mW
     wl_off=0
     wl_off_ext=0
+    osa.write(f"WOFS 0")
     laser.Write(f"LP{opow}")
-    laser.write(f"WA {calib_wl}")
+    laser.Write(f"WA {calib_wl}")
     laser.Write("SO")
     osa.write(f"CNT {calib_wl}")
     osa.write(f"SPN {wl_span}")
@@ -54,6 +55,7 @@ def wavelength_calibration(osa, laser, pow_cal=False, l_wait=0.5, o_wait=2, wl_s
     osa.write("PKS PEAK")
     peak_done = osa_wait(osa, "ESR2?", o_wait)
     osa.write("TMK?")
+    laser.Write("SC")
     sweep_res=osa.read().split(",")
     wl_osa=float(sweep_res[0])
     pow_osa=float(sweep_res[1][:-4])
@@ -68,5 +70,6 @@ def wavelength_calibration(osa, laser, pow_cal=False, l_wait=0.5, o_wait=2, wl_s
         osa.write(f"LOFS {pow_off}")
         return wl_off, wl_off_ext, pow_off
 
+    
     return wl_off, wl_off_ext
     

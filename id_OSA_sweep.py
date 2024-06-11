@@ -39,14 +39,14 @@ osa = rm.open_resource('ASRL5::INSTR',
                            read_termination = '\n')
 osa.timeout=2000
 
-wl_c = 1530.6#nm
-span = .25#nm
+wl_c = 1530.55#nm
+span = .1#nm
 step = 0.01;#step [nm]
 
 Optical_power = 1.0 #dBm
 
 measure_wait = 7.0#s time between switching laser wvl and measuring pow
-repeat_time=2
+repeat_time=.8
 
 wl_start = wl_c - span/2; # start wavelength [nm]
 wl_end = wl_c + span/2; # stop wavelength [nm]
@@ -66,7 +66,8 @@ if dBm==True:
 	
 osa_init()
 #TSL550_Laser.clear()
-
+osa.write(f"CNT {wl_c}")
+osa.write(f"SPN {span*2}")
 pows = np.zeros_like(wls)
 
 id_laser.write(f"WAV {wls[0]}")

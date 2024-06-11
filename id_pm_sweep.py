@@ -22,8 +22,8 @@ id_laser.baud_rate= 115200
 id_laser.timeout=2000
 
 
-wl_c = 1550.6#nm
-span = .25#nm
+wl_c = 1530.55#nm
+span = .1#nm
 step = 0.01;#step [nm]
 
 Optical_power = 1.0 #dBm

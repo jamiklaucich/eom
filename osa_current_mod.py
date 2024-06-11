@@ -31,81 +31,104 @@ ref = clr.AddReference(r"Santec_FTDI")
 import Santec_FTDI as ftdi# Importing the main method from the DLL
 # Calling the FTD2xx_helper class from the Santec_FTDI dll
 ftdi_class = ftdi.FTD2xx_helper
-TSL550_Laser = ftdi.FTD2xx_helper("19100002")
+TSL550_Laser = ftdi.FTD2xx_helper("17050019")
 
 
 
 rm = visa.ResourceManager()
 print(rm.list_resources())
+id_laser = rm.open_resource('ASRL4::INSTR',send_end=True, read_termination='\n')
+id_laser.baud_rate= 115200
+id_laser.timeout=2000
 osa = rm.open_resource('ASRL5::INSTR',
                            write_termination = '\n',
                            read_termination = '\n')
 osa.timeout=2000
 power_meter = ThorlabsPM100(inst=rm.open_resource("USB0::0x1313::0x8078::P0007727::0::INSTR"))
 
-wl_off, wl_ext=wavelength_calibration(osa, TSL550_Laser, pow_cal=False, l_wait=0.5, o_wait=2, wl_span=2):
 
-wl=1550.44
+
+pump_init_wl=1550.29
+probe_init_wl = 1530.6
+wl_span=0.25
 mW=True
 opow_start = 0.05
 opow_end = 20.05
-opow_step = 1.0
+opow_step = 2.5
 
 repeat_time=2
+measure_wait = 7#s time between switching laser wvl and measuring pow
+calib_measure_wait=0.25
 
 opow_num = int(1+(opow_end-opow_start)/opow_step)
 
 opows = np.linspace(opow_start,opow_end,opow_num)
-measure_wait = 0.25#s time between switching laser wvl and measuring pow
 
-res_wls=res_pow_calib(TSL550_Laser, power_meter, opows, wl_init=1550, wl_span=1, wl_step = 0.01,measure_wait=1 )
-res_wls
-# ID = input("Enter Device Designation: ")# to change accordingly
-# cur_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-# folder_path = "{}/Data/osa_curr/{} {}".format(os.getcwd(),cur_time,ID)
-# os.makedirs("{}".format(folder_path), exist_ok=True)
-# file_name = f"{ID}-Opt_power{opow_start}dBm"
+calib_flag=input("Enter any character to calibrate resonances with power input. Else previous resonance data is used")
+if(calib_flag):
+    res_wls=res_pow_calib(TSL550_Laser, power_meter, opows, pump_init_wl, wl_span, wl_step = 0.01,measure_wait=calib_measure_wait )
+    res_wls_df = pd.DataFrame({"Powers (mW)": opows, "Wavelengths (nm)": res_wls})
+    res_wls_df.to_csv("Resonant_Wavelengths.csv")
+    input("Proceed?")
+else:
+    res_wls_df = pd.read_csv("Resonant_Wavelengths.csv")
+    res_wls = np.array(res_wls_df["Wavelengths (nm)"].tolist())
+    csv_pows = np.array(res_wls_df["Powers (mW)"].tolist())
+    assert csv_pows.all() == opows.all()
 
-# unit="dBm"
-# if (mW):
-#     unit="mW"
+res_wls_dl = res_wls-res_wls[0]
+probe_wls = probe_init_wl+res_wls_dl
+#wl_off, wl_ext=wavelength_calibration(osa, TSL550_Laser, pow_cal=False, l_wait=0.25, o_wait=2)
+#print(f"{wl_off} {wl_ext}")
+print(f"{res_wls}")
+ID = input("Enter Device Designation: ")# to change accordingly
+cur_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+folder_path = "{}/Data/osa_curr/{} {}".format(os.getcwd(),cur_time,ID)
+os.makedirs("{}".format(folder_path), exist_ok=True)
+file_name = f"{ID}-Opt_power{opow_start}dBm"
 
-# TSL550_Laser.Write(f"POW:UNIT {int(mW)}")
-# TSL550_Laser.Write("SO")#Open Shutter
-# TSL550_Laser.Write("WA{}".format(wl))
-# #TSL550_Laser.clear()
+unit="dBm"
+if (mW):
+    unit="mW"
 
-# # osa.write("*RST")
+TSL550_Laser.Write(f"POW:UNIT {int(mW)}")
+TSL550_Laser.Write("SO")#Open Shutter
+TSL550_Laser.Write("WA{}".format(res_wls[0]))
+#TSL550_Laser.clear()
 
-# osa_init()
-# #print(osa.read())
-# #osa.write("PWR 1550")
-# pows = np.zeros_like(opows)
-# init_time = time.time()
-# for i, opow in enumerate(opows):
-#     TSL550_Laser.Write(f"LP{opow}")
-#     time.sleep(measure_wait)
-#     osa.write("SSI")
-#     sweep_done = osa_wait("ESR2?")
-#     osa.write("PKS PEAK")
-#     peak_done = osa_wait("ESR2?")
-#     osa.write("TMK?")
-#     osa_res = osa.read().split(",")
-#     pows[i] = 10**(float(osa_res[1][:-4])/10)
+# osa.write("*RST")
 
-# # Split the string by comma
-#     print(f"{opow:.4f}mW \t{float(osa_res[0]):.4f}nm \t{pows[i]:.4g}W")
-#             #print(progress_bar_time(j*len(appl_voltage)+i+1, len(laser_voltage*len(laser_power))+1, time.time()-laser_start_time))
+osa_init()
+#print(osa.read())
+#osa.write("PWR 1550")
+pows = np.zeros_like(opows)
+init_time = time.time()
+for i, opow in enumerate(opows):
+    TSL550_Laser.Write(f"LP{opow}")
+    TSL550_Laser.Write(f"WA{res_wls[i]}")
+    id_laser.write(f"WAV {probe_wls[i]}")
+    time.sleep(measure_wait)
+    osa.write("SSI")
+    sweep_done = osa_wait("ESR2?")
+    osa.write("PKS PEAK")
+    peak_done = osa_wait("ESR2?")
+    osa.write("TMK?")
+    osa_res = osa.read().split(",")
+    pows[i] = 10**(float(osa_res[1][:-4])/10)
 
-# TSL550_Laser.Write("SC")#Close Shutter
+# Split the string by comma
+    print(f"{opow:.4f}mW \t{float(osa_res[0]):.4f}nm \t{pows[i]:.4g}W")
+            #print(progress_bar_time(j*len(appl_voltage)+i+1, len(laser_voltage*len(laser_power))+1, time.time()-laser_start_time))
 
-# sweep_df = pd.DataFrame({"Pump in Power (mW)":opows, 
-#                 "Probe Out Power (W)": pows})
-# sweep_df.to_csv("{}/{}.csv".format(folder_path,file_name), index=False)
-# fig = plt.figure()
-# ax = fig.add_subplot()
-# ax.plot(opows, pows)
-# ax.set_xlabel("Pump in Power (mW)")
-# ax.set_ylabel("Probe Out Power (mW)")
-# fig.savefig("{}/wvl_sweep{}.png".format(folder_path, file_name))
-# plt.show()
+TSL550_Laser.Write("SC")#Close Shutter
+
+sweep_df = pd.DataFrame({"Pump in Power (mW)":opows, 
+                "Probe Out Power (W)": pows})
+sweep_df.to_csv("{}/{}.csv".format(folder_path,file_name), index=False)
+fig = plt.figure()
+ax = fig.add_subplot()
+ax.plot(opows, pows)
+ax.set_xlabel("Pump in Power (mW)")
+ax.set_ylabel("Probe Out Power (mW)")
+fig.savefig("{}/wvl_sweep{}.png".format(folder_path, file_name))
+plt.show()
