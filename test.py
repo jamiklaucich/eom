@@ -18,4 +18,4 @@ import Santec_FTDI as ftdi# Importing the main method from the DLL
 ftdi_class = ftdi.FTD2xx_helper
 TSL550_Laser = ftdi.FTD2xx_helper("17050019")
 
-TSL550_Laser.Write("SO")
+TSL550_Laser.Write("SC")

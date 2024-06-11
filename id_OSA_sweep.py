@@ -39,7 +39,7 @@ osa = rm.open_resource('ASRL5::INSTR',
                            read_termination = '\n')
 osa.timeout=2000
 
-wl_c = 1530.55#nm
+wl_c = 1530.5#nm
 span = .1#nm
 step = 0.01;#step [nm]
 
