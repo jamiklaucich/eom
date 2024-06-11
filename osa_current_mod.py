@@ -57,8 +57,14 @@ opow_end = 20.05
 opow_step = 2.5
 
 repeat_time=2
+probe_wait=7#s
 measure_wait = 7#s time between switching laser wvl and measuring pow
 calib_measure_wait=0.25
+
+probe_span=0.1#nm
+probe_step=0.01#nm
+probe_num=int(1+(probe_span)/probe_step)
+probe_wl_d = np.linspace(-0.5*probe_span,0.5*probe_span, probe_num)
 
 opow_num = int(1+(opow_end-opow_start)/opow_step)
 
@@ -106,15 +112,19 @@ init_time = time.time()
 for i, opow in enumerate(opows):
     TSL550_Laser.Write(f"LP{opow}")
     TSL550_Laser.Write(f"WA{res_wls[i]}")
-    id_laser.write(f"WAV {probe_wls[i]}")
     time.sleep(measure_wait)
-    osa.write("SSI")
-    sweep_done = osa_wait("ESR2?")
-    osa.write("PKS PEAK")
-    peak_done = osa_wait("ESR2?")
-    osa.write("TMK?")
-    osa_res = osa.read().split(",")
-    pows[i] = 10**(float(osa_res[1][:-4])/10)
+    probe_sweep=np.zeros_like(probe_wl_d)
+    for j,wl_d in enumerate(probe_wl_d):
+        id_laser.write(f"WAV {probe_wls[i]+wl_d}")
+        time.sleep(probe_wait)
+        osa.write("SSI")
+        sweep_done = osa_wait("ESR2?")
+        osa.write("PKS PEAK")
+        peak_done = osa_wait("ESR2?")
+        osa.write("TMK?")
+        osa_res = osa.read().split(",")
+        probe_sweep[j] = 10**(float(osa_res[1][:-4])/10)
+    pows[i] = np.min(probe_sweep)
 
 # Split the string by comma
     print(f"{opow:.4f}mW \t{float(osa_res[0]):.4f}nm \t{pows[i]:.4g}W")
